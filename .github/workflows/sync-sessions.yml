@@ -75,6 +75,9 @@ jobs:
 
       - name: ✅ Commit & push changes (if any)
         run: |
+          # Elimina la carpeta temporal de la clonació abans del commit
+          rm -rf source
+          
           if [ -n "$(git status --porcelain)" ]; then
             git config user.name  "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
