@@ -56,6 +56,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          echo "→ Syncing root README.md"
+          if [[ -f "source/README.md" ]]; then
+            cp -f "source/README.md" README.md
+          fi
+          
           for S in ${{ steps.pick.outputs.sessions }}; do
             [[ -d "source/$S" ]] || continue
             echo "→ Sync $S"
