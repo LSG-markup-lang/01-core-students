@@ -1,0 +1,80 @@
+name: 🔄 Sync sessions from private demos → demos-starters (Deploy Key)
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # cada hora
+  workflow_dispatch:
+    inputs:
+      session:
+        description: "Opcional: només sincronitza aquesta sessió (ex: session03)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write   # permet fer commit i push al repo destí
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout target (demos-starters)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔐 Setup SSH for private source (Deploy Key)
+        env:
+          SOURCE_DEPLOY_KEY: ${{ secrets.SOURCE_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SOURCE_DEPLOY_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: ⬇️ Clone private source repo (demos)
+        run: |
+          git clone --depth=1 git@github.com:LSG-markup-lang/demos.git source
+
+      - name: 🔎 Detect sessions to sync
+        id: pick
+        run: |
+          if [ -n "${{ github.event.inputs.session }}" ]; then
+            echo "sessions=${{ github.event.inputs.session }}" >> $GITHUB_OUTPUT
+          else
+            SESS=$(cd source && ls -d session[0-9][0-9] 2>/dev/null || true)
+            echo "sessions=${SESS}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🧩 Copy README.md and starter/ (if exists)
+        run: |
+          set -e
+          for S in ${{ steps.pick.outputs.sessions }}; do
+            [ -d "source/$S" ] || continue
+            echo "→ Sync $S"
+
+            mkdir -p "$S"
+
+            # Copia README.md si hi és
+            if [ -f "source/$S/README.md" ]; then
+              cp -f "source/$S/README.md" "$S/README.md"
+            fi
+
+            # Copia starter/ si hi és
+            if [ -d "source/$S/starter" ]; then
+              rm -rf "$S/starter"
+              rsync -a --delete "source/$S/starter/" "$S/starter/"
+            fi
+          done
+
+      - name: ✅ Commit & push changes (if any)
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "chore(sync): update ${{ steps.pick.outputs.sessions }} from demos [skip ci]"
+            git push https://github.com/LSG-markup-lang/demos-starters.git HEAD:main
+          else
+            echo "✅ No changes to commit."
+          fi
