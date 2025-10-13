@@ -32,8 +32,8 @@ permissions:
 env:
   # --- Source (repo de profes, privat) --------------------------------------
   SOURCE_ORG: 'LSG-markup-lang' # Organització d’origen
-  SOURCE_REPO: 'demos' # Nom del repo d’origen
-  SOURCE_BRANCH: 'main' # Branca d’origen
+  SOURCE_REPO: 'demos-teachers'          # Nom del repo d’origen
+  SOURCE_BRANCH: 'main'         # Branca d’origen
 
   # --- Auth (Deploy Key via secret) -----------------------------------------
   SOURCE_DEPLOY_KEY_SECRET: 'SOURCE_DEPLOY_KEY'
@@ -42,9 +42,9 @@ env:
   TARGET_BRANCH: 'main'
 
   # --- Què copiar del source ------------------------------------------------
-  COPY_ROOT_README: 'true' # "true" o "false" per copiar README.md arrel
+  COPY_ROOT_README: 'true'         # "true" o "false" per copiar README.md arrel
   SESSION_PATTERN: 'session[0-9][0-9]' # Patró de carpetes de sessió
-  STARTER_DIRNAME: 'starter' # Nom de la subcarpeta dins de cada sessió
+  STARTER_DIRNAME: 'starter'       # Nom de la subcarpeta dins de cada sessió
 
   # --- Fitxer amb la llista de sessions obertes -----------------------------
   OPEN_SESSIONS_FILE: '_course/open-sessions.txt'
@@ -87,68 +87,107 @@ jobs:
           git clone --depth=1 --branch "${SOURCE_BRANCH}" "git@github.com:${SOURCE_ORG}/${SOURCE_REPO}.git" source
 
       # ----------------------------------------------------------------------
-      # 🚦 4) Filtrat de sessions segons $OPEN_SESSIONS_FILE
+      # 🚦 4) Calcula sessions a sincronitzar (intersecció OPEN × SOURCE)
+      #     (No esborra res a "source/"; només construeix l'allowlist)
       # ----------------------------------------------------------------------
-      - name: 🚦 Filter source sessions by ${{ env.OPEN_SESSIONS_FILE }}
+      - name: 🚦 Build allowlist from ${{ env.OPEN_SESSIONS_FILE }} ∩ source
+        id: allow
         shell: bash
         run: |
           set -euo pipefail
 
           OPEN_FILE="${OPEN_SESSIONS_FILE}"
 
-          # 1) Llegeix la llista de sessions obertes (si el fitxer existeix)
+          # 1) Llegeix sessions obertes tolerant comentaris/espais/CRLF
           if [[ -f "$OPEN_FILE" ]]; then
-            mapfile -t OPEN_SESS < <(grep -E '^[[:space:]]*session[0-9][0-9][[:space:]]*$' "$OPEN_FILE" \
-                                      | tr -d ' ' \
-                                      | sort -u)
+            mapfile -t OPEN_SESS < <(
+              sed -E 's/#.*$//' "$OPEN_FILE" |  # treu comentaris
+              tr -d '\r' |                      # treu CR (Windows)
+              grep -Eo 'session[0-9]{2}' || true
+            )
           else
-            echo "⚠️ No s'ha trobat $OPEN_FILE → no s'obrirà cap sessió."
+            echo "⚠️ No s'ha trobat $OPEN_FILE → cap sessió oberta."
             OPEN_SESS=()
           fi
 
+          # Normalitza i treu duplicats
+          if (( ${#OPEN_SESS[@]} > 0 )); then
+            mapfile -t OPEN_SESS < <(printf "%s\n" "${OPEN_SESS[@]}" | sort -u)
+          fi
+          echo "OPEN_SESS: ${OPEN_SESS[*]:-∅}"
+
           # 2) Llista de sessions existents al repo font
-          cd source
-          mapfile -t SRC_SESS < <(find . -maxdepth 1 -mindepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true)
-          cd ..
+          mapfile -t SRC_SESS < <(cd source && find . -maxdepth 1 -mindepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true)
+          echo "SRC_SESS:  ${SRC_SESS[*]:-∅}"
 
-          # 3) Funció helper per saber si una sessió està oberta
-          is_open() {
-            local x="$1"
-            for s in "${OPEN_SESS[@]:-}"; do
-              [[ "$s" == "$x" ]] && return 0
-            done
-            return 1
-          }
+          # 3) Intersecció: només les que són a OPEN i existeixen a source
+          declare -A SEEN=()
+          for s in "${SRC_SESS[@]:-}"; do SEEN["$s"]=1; done
 
-          # 4) Elimina del clon totes les sessions tancades
-          KEPT=0
-          REMOVED=0
-          for d in "${SRC_SESS[@]:-}"; do
-            if is_open "$d"; then
-              echo "✅ Keep $d"
-              KEPT=$((KEPT+1))
+          ALLOW=()
+          for s in "${OPEN_SESS[@]:-}"; do
+            if [[ -n "${SEEN[$s]:-}" ]]; then
+              ALLOW+=("$s")
             else
-              echo "🧹 Remove (closed) $d"
-              rm -rf "source/$d"
-              REMOVED=$((REMOVED+1))
+              echo "ℹ️  Ometo ${s}: no existeix al repo font."
             fi
           done
 
-          echo "Summary: kept=$KEPT removed=$REMOVED"
+          # 4) Exporta la llista (separada per espais) com a output
+          if (( ${#ALLOW[@]} > 0 )); then
+            SESSIONS="$(printf "%s " "${ALLOW[@]}")"
+            echo "allow_sessions=${SESSIONS}" >> "$GITHUB_OUTPUT"
+            echo "✅ Sessions a sync: ${SESSIONS}"
+          else
+            echo "allow_sessions=" >> "$GITHUB_OUTPUT"
+            echo "✅ No hi ha sessions per sincronitzar."
+          fi
 
       # ----------------------------------------------------------------------
-      # 🔎 5) Detecció de sessions a sincronitzar
+      # 🔎 5) Detecció de sessions a sincronitzar (des de l'allowlist)
       # ----------------------------------------------------------------------
       - name: 🔎 Detect sessions to sync
         id: pick
         shell: bash
         run: |
           set -euo pipefail
-          SESS="$(cd source && find . -maxdepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f ' 2>/dev/null || true)"
-          echo "sessions=${SESS:-}" >> "$GITHUB_OUTPUT"
+          echo "sessions=${{ steps.allow.outputs.allow_sessions }}" >> "$GITHUB_OUTPUT"
 
       # ----------------------------------------------------------------------
-      # 🧩 6) Còpia de sessions i README.md arrel
+      # 🧹 6) (OPCIÓ B) Purge al repo d'alumnes:
+      #        esborra del target totes les sessions que NO estiguin obertes
+      # ----------------------------------------------------------------------
+      - name: 🧹 Purge closed sessions from target
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Construeix un set amb les obertes
+          declare -A ALLOWED=()
+          for s in ${{ steps.pick.outputs.sessions }}; do
+            [[ -n "$s" ]] && ALLOWED["$s"]=1
+          done
+
+          # Cerca carpetes de sessió al directori arrel del repo d'alumnes
+          mapfile -t EXIST < <(find . -maxdepth 1 -mindepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true)
+
+          REMOVED=0
+          KEPT=0
+          for d in "${EXIST[@]:-}"; do
+            if [[ -z "${ALLOWED[$d]:-}" ]]; then
+              echo "🧹 Remove closed session $d"
+              rm -rf "$d"
+              REMOVED=$((REMOVED+1))
+            else
+              echo "✅ Keep open session $d"
+              KEPT=$((KEPT+1))
+            fi
+          done
+
+          echo "Summary purge: kept=$KEPT removed=$REMOVED"
+
+      # ----------------------------------------------------------------------
+      # 🧩 7) Còpia de sessions i README.md arrel
       # ----------------------------------------------------------------------
       - name: 🧩 Copy sessions and root README.md
         if: ${{ steps.pick.outputs.sessions != '' }}
@@ -156,20 +195,20 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Copia del README.md arrel (si està activat)
+          # Copia del README.md arrel (si està activat i existeix al source)
           if [[ "${COPY_ROOT_README}" == "true" && -f "source/README.md" ]]; then
             echo "→ Syncing root README.md"
             cp -f "source/README.md" README.md
           fi
 
-          # Recorre les sessions detectades
+          # Recorre les sessions de l'allowlist
           for S in ${{ steps.pick.outputs.sessions }}; do
             [[ -d "source/$S" ]] || continue
             echo "→ Sync $S"
 
             mkdir -p "$S"
 
-            # Copia README.md de la sessió
+            # Copia README.md de la sessió (si existeix)
             if [[ -f "source/$S/README.md" ]]; then
               cp -f "source/$S/README.md" "$S/README.md"
             fi
@@ -182,7 +221,7 @@ jobs:
           done
 
       # ----------------------------------------------------------------------
-      # ✅ 7) Commit & push dels canvis (si n’hi ha)
+      # ✅ 8) Commit & push dels canvis (si n’hi ha)
       # ----------------------------------------------------------------------
       - name: ✅ Commit & push changes (if any)
         env:
@@ -195,7 +234,7 @@ jobs:
             git config user.name  "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add -A
-            git commit -m "chore(sync): update root README and ${COMMIT_SESSIONS} from ${SOURCE_ORG}/${SOURCE_REPO} [skip ci]"
+            git commit -m "chore(sync): purge closed + update root README and ${COMMIT_SESSIONS} from ${SOURCE_ORG}/${SOURCE_REPO} [skip ci]"
             git push origin "HEAD:${TARGET_BRANCH}"
           else
             echo "✅ No changes."
