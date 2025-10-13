@@ -1,32 +1,53 @@
+# ============================================================================
+# 🔄 Sync sessions + root README from private repos-teachers → repos-students
+#    (via Deploy Key)
+#
+# Objectiu:
+# - Des d’un repo privat de profes (source) copia:
+#   - README.md de l’arrel (opcional)
+#   - Per a cada carpeta 'sessionNN' oberta, el README.md i la subcarpeta 'starter/'
+# - Les sessions “obertes” venen definides al fitxer configurat per la variable
+#   OPEN_SESSIONS_FILE (p. ex. ".course/open-sessions.txt").
+# ============================================================================
+
 name: 🔄 Sync sessions + root README from private repos-teachers → repos-students (Deploy Key)
 
+# ----------------------------------------------------------------------------
+# 🕐 Triggers del workflow
+# ----------------------------------------------------------------------------
 on:
   schedule:
-    - cron: "0 * * * *"   # cada hora
+    - cron: '0 * * * *' # cada hora
   workflow_dispatch: {}
 
+# ----------------------------------------------------------------------------
+# 🔒 Permisos necessaris
+# ----------------------------------------------------------------------------
 permissions:
-  contents: write   # permet fer commit i push al repo destí
+  contents: write # permet fer commit i push al repo destí
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 🔧 VARIABLES (edita només aquesta secció quan el reutilitzis)
+# 🔧 VARIABLES CONFIGURABLES
 # ─────────────────────────────────────────────────────────────────────────────
 env:
-  # Repo font (privat, dels professors)
-  SOURCE_ORG: "LSG-markup-lang"
-  SOURCE_REPO: "demos-teachers"
-  SOURCE_BRANCH: "main"
+  # --- Source (repo de profes, privat) --------------------------------------
+  SOURCE_ORG: 'LSG-markup-lang' # Organització d’origen
+  SOURCE_REPO: 'demos' # Nom del repo d’origen
+  SOURCE_BRANCH: 'main' # Branca d’origen
 
-  # Clau SSH privada (secret al repo destí) que té Read al repo font
-  SOURCE_DEPLOY_KEY_SECRET: "SOURCE_DEPLOY_KEY"
+  # --- Auth (Deploy Key via secret) -----------------------------------------
+  SOURCE_DEPLOY_KEY_SECRET: 'SOURCE_DEPLOY_KEY'
 
-  # Repo destí (normalment és el repo on s’executa l’acció)
-  TARGET_BRANCH: "main"   # canvia-ho si el repo destí usa una altra rama per defecte
+  # --- Target (repo d’alumnes; normalment aquest) ---------------------------
+  TARGET_BRANCH: 'main'
 
-  # Què copiar
-  COPY_ROOT_README: "true"   # "true" o "false"
-  SESSION_PATTERN: "session[0-9][0-9]"  # patró de carpetes de sessió (arrel del repo font)
-  STARTER_DIRNAME: "starter"            # nom de la carpeta a sincronitzar dins de cada sessió
+  # --- Què copiar del source ------------------------------------------------
+  COPY_ROOT_README: 'true' # "true" o "false" per copiar README.md arrel
+  SESSION_PATTERN: 'session[0-9][0-9]' # Patró de carpetes de sessió
+  STARTER_DIRNAME: 'starter' # Nom de la subcarpeta dins de cada sessió
+
+  # --- Fitxer amb la llista de sessions obertes -----------------------------
+  OPEN_SESSIONS_FILE: '_course/open-sessions.txt'
 
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -35,12 +56,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ----------------------------------------------------------------------
+      # ⬇️ 1) Checkout del repo destí
+      # ----------------------------------------------------------------------
       - name: ⬇️ Checkout target (${{ github.repository }} @ ${{ env.TARGET_BRANCH }})
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ env.TARGET_BRANCH }}
 
+      # ----------------------------------------------------------------------
+      # 🔐 2) Configuració SSH per accedir al repo privat d’origen (Deploy Key)
+      # ----------------------------------------------------------------------
       - name: 🔐 Setup SSH for private source (Deploy Key)
         env:
           SOURCE_DEPLOY_KEY: ${{ secrets[env.SOURCE_DEPLOY_KEY_SECRET] }}
@@ -51,56 +78,118 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
+      # ----------------------------------------------------------------------
+      # ⬇️ 3) Clonació del repo d’origen (privat) a ./source
+      # ----------------------------------------------------------------------
       - name: ⬇️ Clone private source repo (${{ env.SOURCE_ORG }}/${{ env.SOURCE_REPO }} @ ${{ env.SOURCE_BRANCH }})
         run: |
           set -euo pipefail
           git clone --depth=1 --branch "${SOURCE_BRANCH}" "git@github.com:${SOURCE_ORG}/${SOURCE_REPO}.git" source
 
+      # ----------------------------------------------------------------------
+      # 🚦 4) Filtrat de sessions segons $OPEN_SESSIONS_FILE
+      # ----------------------------------------------------------------------
+      - name: 🚦 Filter source sessions by ${{ env.OPEN_SESSIONS_FILE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OPEN_FILE="${OPEN_SESSIONS_FILE}"
+
+          # 1) Llegeix la llista de sessions obertes (si el fitxer existeix)
+          if [[ -f "$OPEN_FILE" ]]; then
+            mapfile -t OPEN_SESS < <(grep -E '^[[:space:]]*session[0-9][0-9][[:space:]]*$' "$OPEN_FILE" \
+                                      | tr -d ' ' \
+                                      | sort -u)
+          else
+            echo "⚠️ No s'ha trobat $OPEN_FILE → no s'obrirà cap sessió."
+            OPEN_SESS=()
+          fi
+
+          # 2) Llista de sessions existents al repo font
+          cd source
+          mapfile -t SRC_SESS < <(find . -maxdepth 1 -mindepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true)
+          cd ..
+
+          # 3) Funció helper per saber si una sessió està oberta
+          is_open() {
+            local x="$1"
+            for s in "${OPEN_SESS[@]:-}"; do
+              [[ "$s" == "$x" ]] && return 0
+            done
+            return 1
+          }
+
+          # 4) Elimina del clon totes les sessions tancades
+          KEPT=0
+          REMOVED=0
+          for d in "${SRC_SESS[@]:-}"; do
+            if is_open "$d"; then
+              echo "✅ Keep $d"
+              KEPT=$((KEPT+1))
+            else
+              echo "🧹 Remove (closed) $d"
+              rm -rf "source/$d"
+              REMOVED=$((REMOVED+1))
+            fi
+          done
+
+          echo "Summary: kept=$KEPT removed=$REMOVED"
+
+      # ----------------------------------------------------------------------
+      # 🔎 5) Detecció de sessions a sincronitzar
+      # ----------------------------------------------------------------------
       - name: 🔎 Detect sessions to sync
         id: pick
         shell: bash
         run: |
           set -euo pipefail
-          # Llista carpetes que compleixin el patró a l'arrel del repo font
           SESS="$(cd source && find . -maxdepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f ' 2>/dev/null || true)"
           echo "sessions=${SESS:-}" >> "$GITHUB_OUTPUT"
 
+      # ----------------------------------------------------------------------
+      # 🧩 6) Còpia de sessions i README.md arrel
+      # ----------------------------------------------------------------------
       - name: 🧩 Copy sessions and root README.md
         if: ${{ steps.pick.outputs.sessions != '' }}
         shell: bash
         run: |
           set -euo pipefail
 
+          # Copia del README.md arrel (si està activat)
           if [[ "${COPY_ROOT_README}" == "true" && -f "source/README.md" ]]; then
             echo "→ Syncing root README.md"
             cp -f "source/README.md" README.md
           fi
 
+          # Recorre les sessions detectades
           for S in ${{ steps.pick.outputs.sessions }}; do
             [[ -d "source/$S" ]] || continue
             echo "→ Sync $S"
 
             mkdir -p "$S"
 
-            # Copia README.md si hi és
+            # Copia README.md de la sessió
             if [[ -f "source/$S/README.md" ]]; then
               cp -f "source/$S/README.md" "$S/README.md"
             fi
 
-            # Copia starter/ si hi és
+            # Copia starter/ (destructiu per mantenir-lo sincronitzat 1:1)
             if [[ -d "source/$S/${STARTER_DIRNAME}" ]]; then
-              # Destructiu dins de la subcarpeta starter per mantenir-la neta i 1:1
               rm -rf "$S/${STARTER_DIRNAME}"
               rsync -a --delete "source/$S/${STARTER_DIRNAME}/" "$S/${STARTER_DIRNAME}/"
             fi
           done
 
+      # ----------------------------------------------------------------------
+      # ✅ 7) Commit & push dels canvis (si n’hi ha)
+      # ----------------------------------------------------------------------
       - name: ✅ Commit & push changes (if any)
         env:
           COMMIT_SESSIONS: ${{ steps.pick.outputs.sessions }}
         run: |
           set -euo pipefail
-          rm -rf source  # neteja clonació temporal
+          rm -rf source
 
           if [ -n "$(git status --porcelain)" ]; then
             git config user.name  "github-actions[bot]"
