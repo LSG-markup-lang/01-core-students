@@ -32,7 +32,7 @@ permissions:
 env:
   # --- Source (repo de profes, privat) --------------------------------------
   SOURCE_ORG: 'LSG-markup-lang' # Organització d’origen
-  SOURCE_REPO: 'demos' # Nom del repo d’origen
+  SOURCE_REPO: 'demos-teachers' # Nom del repo d’origen
   SOURCE_BRANCH: 'main' # Branca d’origen
 
   # --- Auth (Deploy Key via secret) -----------------------------------------
@@ -47,7 +47,7 @@ env:
   STARTER_DIRNAME: 'starter' # Nom de la subcarpeta dins de cada sessió
 
   # --- Fitxer amb la llista de sessions obertes -----------------------------
-  OPEN_SESSIONS_FILE: '.course/open-sessions.txt'
+  OPEN_SESSIONS_FILE: '_course/open-sessions.md'
 
 # ─────────────────────────────────────────────────────────────────────────────
 
