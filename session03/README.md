@@ -1,10 +1,6 @@
 > [!IMPORTANT]
 > ❗ **Accessible version for students:** > [🔗 Open the Gist with the README](https://gist.github.com/oriolcortes/1d3a4f56784951fc47895c9325d58f35)
 >
-> 📂 **Exercises folder:** > [🔗 Open class exercises](https://github.com/oriolcortes/exercises-web/tree/main/sessions/session03)
->
-> ❓ **Questions folder:** > [🔗 Open class questions](https://github.com/oriolcortes/question-bank/tree/main/questions/web/session03)
->
 > 📝 **Important:**
 > If you change this README, make sure to update the Gist as well so students always see the latest version.
 

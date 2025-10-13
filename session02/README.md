@@ -1,14 +1,10 @@
 > [!IMPORTANT]
 > ❗ **Accessible version for students:** > [🔗 Open the Gist with the README](https://gist.github.com/oriolcortes/6b92dd5983151fccd90594b9e75fbcc1)
 >
-> 📂 **Exercises folder:** > [🔗 Open class exercises](https://github.com/oriolcortes/exercises-web/tree/main/sessions/session02)
->
-> ❓ **Questions folder:** > [🔗 Open class questions](https://github.com/oriolcortes/question-bank/tree/main/questions/web/session02)
->
 > 📝 **Important:**
 > If you change this README, make sure to update the Gist as well so students always see the latest version.
 
-# 🌐 More Elements & Containers
+# 🌐 HTML Elements & Containers
 
 ## 📑 Index
 

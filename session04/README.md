@@ -1,14 +1,7 @@
 > [!IMPORTANT]
-> ❗ **Accessible version for students:**  
-> [🔗 Open the Gist with the README](https://gist.github.com/oriolcortes/XXXXXX)
+> ❗ **Accessible version for students:** > [🔗 Open the Gist with the README](https://gist.github.com/oriolcortes/2c49e030567c5b26baae3ad9e5b58002)
 >
-> 📂 **Exercises folder:**  
-> [🔗 Open class exercises](https://github.com/oriolcortes/exercises-web/tree/main/sessions/session04)
->
-> ❓ **Questions folder:**  
-> [🔗 Open class questions](https://github.com/oriolcortes/question-bank/tree/main/questions/web/session04)
->
-> 📝 **Important:**  
+> 📝 **Important:**
 > If you update this README, remember to update the Gist so students always see the latest version.
 
 # 🎨 CSS Reset & Box Model
@@ -24,7 +17,7 @@
 
 ---
 
-- **CSS Properties (`properties.html`):**
+- **CSS Properties:**
 
   - **Borders:**
 
@@ -78,5 +71,5 @@
 - [🎨 CSS `filter` Reference (CSS-Tricks)](https://css-tricks.com/almanac/properties/f/filter/)
 
 > [!TIP]
-> Use a **CSS reset** at the start of your project to ensure consistent rendering across browsers.  
+> Use a **CSS reset** at the start of your project to ensure consistent rendering across browsers.
 > Remember: mastering the **box model** (margin, border, padding, content) is essential for controlling layout spacing and alignment.

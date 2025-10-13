@@ -1,14 +1,10 @@
 > [!IMPORTANT]
 > ❗ **Accessible version for students:** > [🔗 Open the Gist with the README](https://gist.github.com/oriolcortes/d625fd666afc9e223e06aa3dc98a0bb5)
 >
-> 📂 **Exercises folder:** > [🔗 Open class exercises](https://github.com/oriolcortes/exercises-web/tree/main/sessions/session01)
->
-> ❓ **Questions folder:** > [🔗 Open class questions](https://github.com/oriolcortes/question-bank/tree/main/questions/web/session01)
->
 > 📝 **Important:**
 > If you change this README, make sure to update the Gist as well so students always see the latest version.
 
-# 🌐 Web Intro
+# 🌐 Web Intro & HTML Elements
 
 ## 📑 Index
 
