@@ -68,7 +68,6 @@ jobs:
 
       # ----------------------------------------------------------------------
       # 🚦 4) Calcula sessions a sincronitzar (intersecció OPEN × SOURCE)
-      #     Llegeix l’"open-sessions.txt" des de **source/**.
       # ----------------------------------------------------------------------
       - name: 🚦 Build allowlist from ${{ env.OPEN_SESSIONS_FILE }} ∩ source
         id: allow
@@ -84,7 +83,9 @@ jobs:
             mapfile -t OPEN_SESS < <(
               sed -E 's/#.*$//' "$OPEN_FILE" |   # treu comentaris finals
               tr -d '\r' |                       # treu CR (Windows)
-              grep -Eo 'session[0-9]{2}' || true # extreu tokens vàlids
+              grep -Eo '(^|[-*[:space:]])session[0-9]{2}' |  # troba "sessionNN" en llistes o línies soltes
+              grep -Eo 'session[0-9]{2}' |         # extreu només el token
+              sort -u || true
             )
           else
             echo "⚠️ No s'ha trobat $OPEN_FILE → cap sessió oberta."
