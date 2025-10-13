@@ -1,95 +1,113 @@
-name: 🔄 Sync sessions from private demos → demos-starters (Deploy Key)
+name: 🔄 Sync sessions + root README from private repos-teachers → repos-students (Deploy Key)
 
 on:
   schedule:
     - cron: "0 * * * *"   # cada hora
-  workflow_dispatch:
-    inputs:
-      session:
-        description: "Opcional: només sincronitza aquesta sessió (ex: session03)"
-        required: false
-        default: ""
+  workflow_dispatch: {}
 
 permissions:
   contents: write   # permet fer commit i push al repo destí
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 🔧 VARIABLES (edita només aquesta secció quan el reutilitzis)
+# ─────────────────────────────────────────────────────────────────────────────
+env:
+  # Repo font (privat, dels professors)
+  SOURCE_ORG: "LSG-markup-lang"
+  SOURCE_REPO: "demos-teachers"
+  SOURCE_BRANCH: "main"
+
+  # Clau SSH privada (secret al repo destí) que té Read al repo font
+  SOURCE_DEPLOY_KEY_SECRET: "SOURCE_DEPLOY_KEY"
+
+  # Repo destí (normalment és el repo on s’executa l’acció)
+  TARGET_BRANCH: "main"   # canvia-ho si el repo destí usa una altra rama per defecte
+
+  # Què copiar
+  COPY_ROOT_README: "true"   # "true" o "false"
+  SESSION_PATTERN: "session[0-9][0-9]"  # patró de carpetes de sessió (arrel del repo font)
+  STARTER_DIRNAME: "starter"            # nom de la carpeta a sincronitzar dins de cada sessió
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 jobs:
   sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: ⬇️ Checkout target (demos-starters)
+      - name: ⬇️ Checkout target (${{ github.repository }} @ ${{ env.TARGET_BRANCH }})
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ env.TARGET_BRANCH }}
 
       - name: 🔐 Setup SSH for private source (Deploy Key)
         env:
-          SOURCE_DEPLOY_KEY: ${{ secrets.SOURCE_DEPLOY_KEY }}
+          SOURCE_DEPLOY_KEY: ${{ secrets[env.SOURCE_DEPLOY_KEY_SECRET] }}
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
           echo "$SOURCE_DEPLOY_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-      - name: ⬇️ Clone private source repo (demos)
+      - name: ⬇️ Clone private source repo (${{ env.SOURCE_ORG }}/${{ env.SOURCE_REPO }} @ ${{ env.SOURCE_BRANCH }})
         run: |
-          git clone --depth=1 git@github.com:LSG-markup-lang/demos.git source
+          set -euo pipefail
+          git clone --depth=1 --branch "${SOURCE_BRANCH}" "git@github.com:${SOURCE_ORG}/${SOURCE_REPO}.git" source
 
       - name: 🔎 Detect sessions to sync
         id: pick
         shell: bash
         run: |
           set -euo pipefail
-          INPUT="${{ github.event.inputs.session }}"
-          if [[ -n "$INPUT" ]]; then
-            # Escriu clau=valor en una sola línia
-            echo "sessions=$INPUT" >> "$GITHUB_OUTPUT"
-          else
-            # Llista totes les carpetes sessionXX i uneix en una sola línia separada per espais
-            SESS="$(cd source && ls -d session[0-9][0-9] 2>/dev/null | tr '\n' ' ' | xargs || true)"
-            echo "sessions=$SESS" >> "$GITHUB_OUTPUT"
-          fi
+          # Llista carpetes que compleixin el patró a l'arrel del repo font
+          SESS="$(cd source && find . -maxdepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f ' 2>/dev/null || true)"
+          echo "sessions=${SESS:-}" >> "$GITHUB_OUTPUT"
 
-      - name: 🧩 Copy README.md and starter/ (if exists)
+      - name: 🧩 Copy sessions and root README.md
         if: ${{ steps.pick.outputs.sessions != '' }}
         shell: bash
         run: |
           set -euo pipefail
 
-          echo "→ Syncing root README.md"
-          if [[ -f "source/README.md" ]]; then
+          if [[ "${COPY_ROOT_README}" == "true" && -f "source/README.md" ]]; then
+            echo "→ Syncing root README.md"
             cp -f "source/README.md" README.md
           fi
-          
+
           for S in ${{ steps.pick.outputs.sessions }}; do
             [[ -d "source/$S" ]] || continue
             echo "→ Sync $S"
+
             mkdir -p "$S"
 
-            # README.md
+            # Copia README.md si hi és
             if [[ -f "source/$S/README.md" ]]; then
               cp -f "source/$S/README.md" "$S/README.md"
             fi
 
-            # starter/
-            if [[ -d "source/$S/starter" ]]; then
-              rm -rf "$S/starter"
-              rsync -a --delete "source/$S/starter/" "$S/starter/"
+            # Copia starter/ si hi és
+            if [[ -d "source/$S/${STARTER_DIRNAME}" ]]; then
+              # Destructiu dins de la subcarpeta starter per mantenir-la neta i 1:1
+              rm -rf "$S/${STARTER_DIRNAME}"
+              rsync -a --delete "source/$S/${STARTER_DIRNAME}/" "$S/${STARTER_DIRNAME}/"
             fi
           done
 
       - name: ✅ Commit & push changes (if any)
+        env:
+          COMMIT_SESSIONS: ${{ steps.pick.outputs.sessions }}
         run: |
-          # Elimina la carpeta temporal de la clonació abans del commit
-          rm -rf source
-          
+          set -euo pipefail
+          rm -rf source  # neteja clonació temporal
+
           if [ -n "$(git status --porcelain)" ]; then
             git config user.name  "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add .
-            git commit -m "chore(sync): update ${{ steps.pick.outputs.sessions }} from demos [skip ci]"
-            git push https://github.com/LSG-markup-lang/demos-starters.git HEAD:main
+            git add -A
+            git commit -m "chore(sync): update root README and ${COMMIT_SESSIONS} from ${SOURCE_ORG}/${SOURCE_REPO} [skip ci]"
+            git push origin "HEAD:${TARGET_BRANCH}"
           else
-            echo "✅ No changes to commit."
+            echo "✅ No changes."
           fi
