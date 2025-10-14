@@ -60,6 +60,7 @@ env:
   # --- Què copiar del source ------------------------------------------------
   COPY_ROOT_README: 'true' # "true" o "false" per copiar README.md arrel
   SESSIONS_ROOT: 'sessions' # arrel on viuen les sessions al repo font
+  TARGET_SESSIONS_ROOT: 'sessions' # on vols que s'escriguin al TARGET
   SESSION_PATTERN: 'session[0-9][0-9]' # Patró de carpetes de sessió
   # OLD STARTER_DIRNAME: 'starter'            # Nom de la subcarpeta dins de cada sessió
   EXCLUDE_FILE: '_course/exclude.md' # fitxer .md amb patrons d’exclusió
@@ -194,11 +195,11 @@ jobs:
           done
 
           # Assegura la carpeta de sessions al destí
-          mkdir -p "${SESSIONS_ROOT}"
+          mkdir -p "${TARGET_SESSIONS_ROOT}"
 
           # Llista de sessions existents al destí dins de sessions/
           mapfile -t EXIST < <(
-            cd "${SESSIONS_ROOT}" && \
+            cd "${TARGET_SESSIONS_ROOT}" && \
             find . -maxdepth 1 -mindepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true
           )
 
@@ -268,7 +269,7 @@ jobs:
           printf '   · %s\n' "${EXCLUDE_PATTERNS[@]:-cap}"
 
           # 4) Assegura la carpeta de sessions al destí
-          mkdir -p "${SESSIONS_ROOT}"
+          mkdir -p "${TARGET_SESSIONS_ROOT}"
 
           # 5) Copia cada sessió oberta
           for S in ${{ steps.pick.outputs.sessions }}; do
@@ -280,10 +281,10 @@ jobs:
               continue
             fi
 
-            mkdir -p "${SESSIONS_ROOT}/$S"
+            mkdir -p "${TARGET_SESSIONS_ROOT}/$S"
 
             # mirroring de TOTA la sessió excepte exclusions
-            rsync -a --delete "${EXCLUDE_ARGS[@]}" "source/${S_PATH}/" "${SESSIONS_ROOT}/$S/"
+            rsync -a --delete "${EXCLUDE_ARGS[@]}" "source/${S_PATH}/" "${TARGET_SESSIONS_ROOT}/$S/"
           done
 
           # Recorre les sessions detectades
