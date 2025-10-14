@@ -215,7 +215,7 @@ jobs:
             fi
           done
 
-          shopt -u dotglob nullglobs
+          shopt -u dotglob nullglob
 
       # ----------------------------------------------------------------------
       # 🧹 7) Purge al repo d'alumnes: esborra les sessions no obertes
