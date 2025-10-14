@@ -1,0 +1,100 @@
+:root {
+  /* Color vars */
+  --primary-color: #ea5d40;
+  --second-color: #fceeeb;
+  --third-color: #752e20;
+  --fourth-color: #2e120c;
+}
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--second-color); /* #FCEEEB; */
+}
+header {
+  background-color: var(--primary-color); /* #EA5D40; */
+  padding: 1rem 0;
+}
+h1 {
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--second-color); /* #FCEEEB; */
+}
+h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+nav {
+  background-color: var(--third-color); /* #752E20; */
+  color: var(--second-color);
+}
+section {
+  padding: 1.8rem 0;
+}
+p {
+  margin-bottom: 0.5rem;
+  line-height: 1.2rem;
+}
+a {
+  color: inherit;
+}
+li {
+  border-right: 1px solid var(--fourth-color); /* #2E120C; */
+}
+li:hover {
+  cursor: pointer;
+  background-color: var(--fourth-color); /* #2E120C; */
+}
+li:last-child {
+  border: none;
+}
+
+/* Comença aquí l'explicació:
+Primer cal escriure tot el codi sense els flex ni el display:inline-block ni el width del "li" i del "a". Repassant totes les propietats.
+Després escriurem els displays: inline-block i widths explicant que una opció és fer-ho així però sempre depens de saber prèviament el nombre d'elements de la navbar.
+Després teurem el display: inline-block i el width només del "li" i posarem els flexboxs.
+*/
+* {
+  box-sizing: border-box;
+}
+h1 {
+  text-align: center;
+}
+.wrapper {
+  width: 80vw; /* Pels Advanced level: var(--wrapper-width); /* És el mateix que posar 80% en aquest cas */
+  margin: 0 auto;
+}
+nav {
+  height: 3.5rem; /* Pels Advenced level: var(--nav-height); /* no és necessari però millor ho deixem */
+}
+ul {
+  width: 80vw; /* Pels Advanced level: var(--wrapper-width); */
+  margin: 0 auto;
+  list-style: none;
+  padding: 0;
+
+  display: flex;
+}
+li {
+  /* display: inline-block; */
+  /* width: calc(100% / 3); /* Podem fer cálculs amb la funció "calc" */
+}
+a {
+  line-height: 3.5rem; /* Pels Advenced level: var(--nav-height); */
+  text-align: center;
+  text-decoration: none;
+
+  display: inline-block;
+  width: 100%;
+}
+
+/* .hide {
+  display: none;
+} */
+
+li {
+  /* flex-grow: 1; /* Que ocupi tot l'espai disponible */
+  /* flex-shrink: 0; width: 200px; /* Que no es redueixi més del width */
+  /* flex-basis: 400px; /* Una altra forma de definir-li el width , no es fa servir massa */
+  /* flex: 1 0 400px; /* Aquest seria un exemple complet amb grow, shrink i basis, però no queda bé en el nostre cas. */
+  flex: 1; /* Posar flex:1 és el mateix que només posar flex-grow */
+}

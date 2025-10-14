@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Website</title>
+    <style>
+      .highlight {
+        color: yellow;
+        background-color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      Abans d'explicar els contenidors, hem d'entendre un concepte "Block & Inline Elements".
+      https://www.w3schools.com/html/html_blocks.asp
+
+      - Els elements de block ocupen el màxim d'amplada possible.
+      - Els elements de linia ocupen només l'espai que necessiten. No podrem modificar la seva altura ni amplada.
+      (Veure exemples del dia anterior. Mostrar-ho amb l'inspector del navegador.)
+    -->
+    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Obcaecati nam blanditiis, atque maiores animi natus. Neque, ratione! Impedit a porro, est inventore recusandae minus excepturi qui, itaque, voluptatem harum sed?</p>
+    <p>Lorem.</p>
+    <a href="#">Link1</a>
+    <a href="#">Link2</a>
+    <!-- Amb CSS es pot modificar tot això i hi hauran més opcions. -->
+
+    <hr>
+
+    <!-- HTML Containers -->
+    <!-- Tota web en el fons és un conjunt de caixes que contenen els elements que ja hem vist anteriorment. -->
+    <div>
+      <a href="#">Link3</a>
+    </div>
+    <div>
+      <a href="#">Link4</a>
+    </div>
+
+    <div>
+      <p>Lorem ipsum dolor sit amet, consectetur <div class="highlight">adipisicing elit</div>. Obcaecati nam blanditiis, atque maiores animi natus. Neque, ratione! Impedit a porro, est inventore recusandae minus excepturi qui, itaque, voluptatem harum sed?</p>
+    </div>
+    <div>
+      <p>Lorem ipsum dolor sit amet, consectetur <span class="highlight">adipisicing elit</span>. Obcaecati nam blanditiis, atque maiores animi natus. Neque, ratione! Impedit a porro, est inventore recusandae minus excepturi qui, itaque, voluptatem harum sed?</p>
+    </div>
+    <!-- 
+      Classes:
+      - Podem fer servir tantes com vulguem en un element HTML, separades per espais.
+      - Serveixen per definir estils CSS, tot i que també veurem altres maneres.
+      - Es poden repetir, els ids no.
+      - Tots els tags HTML poden fer servir els atributs id i class.
+    -->
+    
+  </body>
+</html>

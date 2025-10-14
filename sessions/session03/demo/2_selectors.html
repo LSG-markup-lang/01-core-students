@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Website</title>
+
+    <style>
+      /* Tag Selector */
+      /* h3 {
+        color: blue;
+      } */
+      body {
+        background-color: lightgray;
+      }
+
+      /* ID Selector */
+      /* #about-heading {
+        color: blue;
+      } */
+
+      /* Class Selector */
+      /* El noms han de ser genèrics i tenir sentit, per exemple ".blue-heading" no és bona pràctica (si canvies el color no té sentit) */
+      .primary-heading {
+        color: blue;
+      }
+
+      /* Multiple Selectors */
+      #about-heading,
+      #contact-heading,
+      h1 {
+        font-style: italic;
+      }
+
+      /* Nested Selectors */
+      #contact li {
+        color: darkmagenta;
+      }
+      #about * {
+        color: green;
+      }
+      #about > p {
+        color: darkorange;
+      }
+
+      /* Pseudo-Classes */
+      /*#about:active {
+        background-color: yellow;
+      }*/
+      #about:hover {
+        background-color: yellow;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1 class="primary-heading">My Website</h1>
+    </header>
+    <main>
+      <section id="about">
+        <h3 id="about-heading" class="primary-heading">About</h3>
+        <p>
+          Lorem ipsum dolor, sit amet consectetur adipisicing elit. Reiciendis
+          dolorem vel doloribus laborum architecto fugit nobis, dignissimos
+          eveniet nesciunt distinctio. Quis suscipit neque nihil repellendus.
+          Dignissimos soluta et recusandae rerum dolores ab ducimus nesciunt
+          beatae enim quos, totam molestiae nulla nam delectus, eius eum quo a?
+          Ab praesentium reiciendis recusandae.
+        </p>
+        <a href="#">View more</a>
+        <div>
+          <p>
+            Lorem ipsum, dolor sit amet consectetur adipisicing elit. Dolorem,
+            amet!
+          </p>
+        </div>
+      </section>
+      <section id="contact">
+        <h3 id="contact-heading" class="primary-heading">Contact</h3>
+        <ul>
+          <li>Mail: aaa@something.com</li>
+          <li>Phone: 666 66 66 66</li>
+        </ul>
+      </section>
+    </main>
+    <footer>
+      <p>Coyright &copy; 2021</p>
+    </footer>
+  </body>
+</html>
