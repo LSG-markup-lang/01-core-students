@@ -1,5 +1,5 @@
 # ============================================================================
-# 🔄 Sync sessions + root README from private repos-teachers → repos-students
+# 🔄 Sync sessions + root README from private edu-teachers → edu-students
 #    (via Deploy Key)
 #
 # Objectiu:
@@ -268,7 +268,7 @@ jobs:
           printf '   · %s\n' "${EXCLUDE_PATTERNS[@]:-cap}"
 
           # 4) Assegura la carpeta de sessions al destí
-          mkdir -p "${TARGET_SESSIONS_ROOT}"
+          mkdir -p "${SESSIONS_ROOT}"
 
           # 5) Copia cada sessió oberta
           for S in ${{ steps.pick.outputs.sessions }}; do
