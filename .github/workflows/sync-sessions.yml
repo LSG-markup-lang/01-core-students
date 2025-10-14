@@ -3,14 +3,30 @@
 #    (via Deploy Key)
 #
 # Objectiu:
-# - Des d’un repo privat de profes (source) copia:
-#   - README.md de l’arrel (opcional)
-#   - Per a cada carpeta 'sessionNN' oberta, el README.md i la subcarpeta 'starter/'
-# - Les sessions “obertes” venen definides al fitxer configurat per la variable
-#   OPEN_SESSIONS_FILE (p. ex. ".course/open-sessions.txt").
+#   - Sincronitzar les sessions obertes (segons _course/open-sessions.md) i
+#     el README.md d’arrel des d’un repo privat de profes (edu-teachers)
+#     cap a un repo d’alumnes (edu-students).
+#   - Permetre exclusions de fitxers i carpetes via un fitxer .md
+#   - Permetre fer-ho automàticament cada dia a la mitjanit (UTC)
+#     i manualment via workflow_dispatch.
+#   - Permetre fer-ho amb un Deploy Key (sense usar GITHUB_TOKEN).
+# Requisits:
+#   - El repo d’origen (edu-teachers) ha de ser privat i tenir una
+#     Deploy Key amb accés de lectura.
+#   - El repo de destí (edu-students) ha de tenir aquesta Deploy Key
+#     afegida com a secret (SOURCE_DEPLOY_KEY).
+#   - El repo d’origen ha de tenir un fitxer _course/open-sessions.md
+#     amb la llista de sessions obertes (una per línia, en format Markdown).
+#   - Opcionalment, el repo d’origen pot tenir un fitxer _course/exclude.md
+#     amb patrons d’exclusió (un per línia, tipus '**/solution/', '**/*.log', 'demo/', etc.).
+#   - El repo d’origen ha de tenir les sessions dins d’una carpeta arrel
+#     (per exemple, sessions/session01, sessions/session02, etc.).
+#   - El repo d’origen ha de tenir un README.md a l’arrel.
+#   - El repo de destí ha de tenir una branca main (o la que es configuri
+#     a TARGET_BRANCH).
 # ============================================================================
 
-name: 🔄 Sync sessions + root README from private repos-teachers → repos-students (Deploy Key)
+name: 🔄 Sync sessions + root README from private edu-teachers → edu-students (Deploy Key)
 
 # ----------------------------------------------------------------------------
 # 🕐 Triggers del workflow
@@ -32,7 +48,7 @@ permissions:
 env:
   # --- Source (repo de profes, privat) --------------------------------------
   SOURCE_ORG: 'LSG-markup-lang' # Organització d’origen
-  SOURCE_REPO: 'demos-teachers' # Nom del repo d’origen
+  SOURCE_REPO: 'edu-teachers' # Nom del repo d’origen
   SOURCE_BRANCH: 'main' # Branca d’origen
 
   # --- Auth (Deploy Key via secret) -----------------------------------------
@@ -43,8 +59,10 @@ env:
 
   # --- Què copiar del source ------------------------------------------------
   COPY_ROOT_README: 'true' # "true" o "false" per copiar README.md arrel
+  SESSIONS_ROOT: 'sessions' # arrel on viuen les sessions al repo font
   SESSION_PATTERN: 'session[0-9][0-9]' # Patró de carpetes de sessió
-  STARTER_DIRNAME: 'starter' # Nom de la subcarpeta dins de cada sessió
+  # OLD STARTER_DIRNAME: 'starter'            # Nom de la subcarpeta dins de cada sessió
+  EXCLUDE_FILE: '_course/exclude.md' # fitxer .md amb patrons d’exclusió
 
   # --- Fitxer amb la llista de sessions obertes -----------------------------
   OPEN_SESSIONS_FILE: '_course/open-sessions.md'
@@ -115,7 +133,10 @@ jobs:
 
           # 2) Llista de sessions existents al repo font
           SRC_SESS=()
-          mapfile -t SRC_SESS < <(cd source && find . -maxdepth 1 -mindepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true)
+          # OLD mapfile -t SRC_SESS < <(cd source && find . -maxdepth 1 -mindepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true)
+          mapfile -t SRC_SESS < <(
+            cd source && find "${SESSIONS_ROOT}" -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true
+          )
           echo "SRC_SESS:  ${SRC_SESS[*]:-∅}"
 
           # 3) Intersecció: només les que són a OPEN i existeixen a source
@@ -166,23 +187,39 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Sessions obertes (allowlist) → en un map
           declare -A ALLOWED=()
           for s in ${{ steps.pick.outputs.sessions }}; do
             [[ -n "${s:-}" ]] && ALLOWED["$s"]=1
           done
 
-          mapfile -t EXIST < <(find . -maxdepth 1 -mindepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true)
+          # Assegura la carpeta de sessions al destí
+          mkdir -p "${SESSIONS_ROOT}"
+
+          # Llista de sessions existents al destí dins de sessions/
+          mapfile -t EXIST < <(
+            cd "${SESSIONS_ROOT}" && \
+            find . -maxdepth 1 -mindepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true
+          )
+
+          # OLD
+          # declare -A ALLOWED=()
+          # for s in ${{ steps.pick.outputs.sessions }}; do
+          #   [[ -n "${s:-}" ]] && ALLOWED["$s"]=1
+          # done
+
+          # mapfile -t EXIST < <(find . -maxdepth 1 -mindepth 1 -type d -name "${SESSION_PATTERN}" -printf '%f\n' 2>/dev/null | sort -u || true)
 
           REMOVED=0
           KEPT=0
           for d in "${EXIST[@]:-}"; do
             [[ -n "${d:-}" ]] || continue
             if [[ -z "${ALLOWED[$d]:-}" ]]; then
-              echo "🧹 Remove closed session $d"
-              rm -rf "$d"
+              echo "🧹 Remove closed session ${SESSIONS_ROOT}/$d"
+              rm -rf "${SESSIONS_ROOT}/$d"
               REMOVED=$((REMOVED+1))
             else
-              echo "✅ Keep open session $d"
+              echo "✅ Keep open session ${SESSIONS_ROOT}/$d"
               KEPT=$((KEPT+1))
             fi
           done
@@ -198,30 +235,75 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Copia del README.md arrel (si està activat)
+          # 0) Copia del README.md d'arrel del repo (si està activat)
           if [[ "${COPY_ROOT_README}" == "true" && -f "source/README.md" ]]; then
             echo "→ Syncing root README.md"
             cp -f "source/README.md" README.md
           fi
 
-          # Recorre les sessions detectades
-          for S in ${{ steps.pick.outputs.sessions }}; do
-            [[ -d "source/$S" ]] || continue
-            echo "→ Sync $S"
+          # 1) Llegeix patrons d'exclusió des del .md
+          EXCLUDE_PATTERNS=()
+          if [[ -f "source/${EXCLUDE_FILE}" ]]; then
+            echo "📖 Llegint exclusions de ${EXCLUDE_FILE}..."
+            mapfile -t EXCLUDE_PATTERNS < <(
+              sed -E 's/#.*$//' "source/${EXCLUDE_FILE}" |  # treu títols/comentaris
+              tr -d '\r' |
+              # extreu tokens tipus '**/solution/', '**/*.log', 'demo/', etc.
+              grep -Eo '(\*\*\/[^[:space:]]+|[^[:space:]]+\/|[^[:space:]]+\.[^[:space:]]+)' || true
+            )
+          else
+            echo "⚠️ No s'ha trobat ${EXCLUDE_FILE}; no hi haurà exclusions del .md."
+          fi
 
-            mkdir -p "$S"
+          # 2) Exclusions mínimes de seguretat
+          EXCLUDE_PATTERNS+=(".git/" "${OPEN_SESSIONS_FILE}")
 
-            # Copia README.md de la sessió
-            if [[ -f "source/$S/README.md" ]]; then
-              cp -f "source/$S/README.md" "$S/README.md"
-            fi
-
-            # Copia starter/ (destructiu per mantenir-lo sincronitzat 1:1)
-            if [[ -d "source/$S/${STARTER_DIRNAME}" ]]; then
-              rm -rf "$S/${STARTER_DIRNAME}"
-              rsync -a --delete "source/$S/${STARTER_DIRNAME}/" "$S/${STARTER_DIRNAME}/"
-            fi
+          # 3) Construeix args --exclude per rsync
+          EXCLUDE_ARGS=()
+          for p in "${EXCLUDE_PATTERNS[@]:-}"; do
+            [[ -n "${p:-}" ]] && EXCLUDE_ARGS+=(--exclude "$p")
           done
+
+          echo "🧾 Patrons d'exclusió:"
+          printf '   · %s\n' "${EXCLUDE_PATTERNS[@]:-cap}"
+
+          # 4) Assegura la carpeta de sessions al destí
+          mkdir -p "${TARGET_SESSIONS_ROOT}"
+
+          # 5) Copia cada sessió oberta
+          for S in ${{ steps.pick.outputs.sessions }}; do
+            echo "→ Sync $S (cerca dins ${SESSIONS_ROOT}/.../)"
+            # localitza el path real de la sessió: sessions/.../sessionNN
+            S_PATH="$(cd source && find "${SESSIONS_ROOT}" -type d -name "$S" -print -quit || true)"
+            if [[ -z "${S_PATH:-}" || ! -d "source/${S_PATH}" ]]; then
+              echo "ℹ️  Ometo $S: no s'ha trobat dins de ${SESSIONS_ROOT}/"
+              continue
+            fi
+
+            mkdir -p "${SESSIONS_ROOT}/$S"
+
+            # mirroring de TOTA la sessió excepte exclusions
+            rsync -a --delete "${EXCLUDE_ARGS[@]}" "source/${S_PATH}/" "${SESSIONS_ROOT}/$S/"
+          done
+
+          # Recorre les sessions detectades
+          # for S in ${{ steps.pick.outputs.sessions }}; do
+          #   [[ -d "source/$S" ]] || continue
+          #   echo "→ Sync $S"
+
+          #   mkdir -p "$S"
+
+          #   # Copia README.md de la sessió
+          #   if [[ -f "source/$S/README.md" ]]; then
+          #     cp -f "source/$S/README.md" "$S/README.md"
+          #   fi
+
+          #   # Copia starter/ (destructiu per mantenir-lo sincronitzat 1:1)
+          #   if [[ -d "source/$S/${STARTER_DIRNAME}" ]]; then
+          #     rm -rf "$S/${STARTER_DIRNAME}"
+          #     rsync -a --delete "source/$S/${STARTER_DIRNAME}/" "$S/${STARTER_DIRNAME}/"
+          #   fi
+          # done
 
       # ----------------------------------------------------------------------
       # ✅ 8) Commit & push dels canvis (si n’hi ha)
