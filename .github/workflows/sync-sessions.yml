@@ -68,6 +68,9 @@ env:
   # --- Fitxer amb la llista de sessions obertes -----------------------------
   OPEN_SESSIONS_FILE: '_course/open-sessions.md'
 
+  # --- Elements que no s'han d'esborrar durant la neteja ---
+  KEEP_PATHS: '.git .github source'
+
 # ─────────────────────────────────────────────────────────────────────────────
 
 jobs:
@@ -181,7 +184,41 @@ jobs:
           echo "sessions=${{ steps.allow.outputs.allow_sessions }}" >> "$GITHUB_OUTPUT"
 
       # ----------------------------------------------------------------------
-      # 🧹 6) Purge al repo d'alumnes: esborra les sessions no obertes
+      # 🧨 6) Pre-clean: esborra tot l'arrel excepte .github (i carpetes tècniques)
+      #   ⚠️ Això esborra README.md i la carpeta de sessions; després es tornen a crear/copiar.
+      # ----------------------------------------------------------------------
+      - name: 🧨 Pre-clean root (keep only .github)
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s dotglob nullglob
+
+          # Converteix KEEP_PATHS en array
+          read -r -a KEEP <<< "${KEEP_PATHS}"
+
+          echo "🧹 Directori actual: $(pwd)"
+          echo "🛡️  Es conservaran: ${KEEP[*]}"
+
+          for path in *; do
+            skip=false
+            for k in "${KEEP[@]}"; do
+              if [[ "$path" == "$k" ]]; then
+                skip=true; break
+              fi
+            done
+
+            if [[ "$skip" == false ]]; then
+              echo "🗑️  Esborro: $path"
+              rm -rf "$path"
+            else
+              echo "✅ Mantinc: $path"
+            fi
+          done
+
+          shopt -u dotglob nullglobs
+
+      # ----------------------------------------------------------------------
+      # 🧹 7) Purge al repo d'alumnes: esborra les sessions no obertes
       # ----------------------------------------------------------------------
       - name: 🧹 Purge closed sessions from target
         shell: bash
@@ -228,7 +265,7 @@ jobs:
           echo "Summary purge: kept=$KEPT removed=$REMOVED"
 
       # ----------------------------------------------------------------------
-      # 🧩 7) Còpia de sessions i README.md arrel
+      # 🧩 8) Còpia de sessions i README.md arrel
       # ----------------------------------------------------------------------
       - name: 🧩 Copy sessions and root README.md
         if: ${{ steps.pick.outputs.sessions != '' }}
@@ -307,7 +344,7 @@ jobs:
           # done
 
       # ----------------------------------------------------------------------
-      # ✅ 8) Commit & push dels canvis (si n’hi ha)
+      # ✅ 9) Commit & push dels canvis (si n’hi ha)
       # ----------------------------------------------------------------------
       - name: ✅ Commit & push changes (if any)
         env:
