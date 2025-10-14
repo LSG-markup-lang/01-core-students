@@ -1,9 +1,3 @@
-> [!IMPORTANT]
-> ❗ **Accessible version for students:** > [🔗 Open the Gist with the README](https://gist.github.com/oriolcortes/1d3a4f56784951fc47895c9325d58f35)
->
-> 📝 **Important:**
-> If you change this README, make sure to update the Gist as well so students always see the latest version.
-
 # 🎨 CSS Basics
 
 ## 📑 Index

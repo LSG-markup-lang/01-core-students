@@ -1,9 +1,3 @@
-> [!IMPORTANT]
-> ❗ **Accessible version for students:** > [🔗 Open the Gist with the README](https://gist.github.com/oriolcortes/2c49e030567c5b26baae3ad9e5b58002)
->
-> 📝 **Important:**
-> If you update this README, remember to update the Gist so students always see the latest version.
-
 # 🎨 CSS Reset & Box Model
 
 ## 📑 Index

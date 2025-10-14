@@ -1,11 +1,5 @@
 # 🌐 Web Intro & HTML Elements
 
-> [!IMPORTANT]
-> ❗ **Accessible version for students without GitHub account:** > [🔗 Open the Gist with the README](https://gist.github.com/oriolcortes/d625fd666afc9e223e06aa3dc98a0bb5)
->
-> 📝 **Important:**
-> If you change this README, make sure to update the Gist as well so students always see the latest version.
-
 ## 📑 Index
 
 - **What is the web?**

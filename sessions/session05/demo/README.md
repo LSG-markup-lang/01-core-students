@@ -1,9 +1,3 @@
-> [!IMPORTANT]
-> ❗ **Accessible version for students:** > [🔗 Open the Gist with the README](https://gist.github.com/oriolcortes/329e1a4f5d8ec03f946e933c503da893)
->
-> 📝 **Important:**
-> If you update this README, remember to update the Gist so students always see the latest version.
-
 # 🎨 CSS Alignment & Display & Flexbox
 
 ## 📑 Index

@@ -1,9 +1,3 @@
-> [!IMPORTANT]
-> ❗ **Accessible version for students:** > [🔗 Open the Gist with the README](https://gist.github.com/oriolcortes/6b92dd5983151fccd90594b9e75fbcc1)
->
-> 📝 **Important:**
-> If you change this README, make sure to update the Gist as well so students always see the latest version.
-
 # 🌐 HTML Elements & Containers
 
 ## 📑 Index
