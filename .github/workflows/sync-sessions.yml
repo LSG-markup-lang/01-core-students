@@ -48,7 +48,7 @@ permissions:
 env:
   # --- Source (repo de profes, privat) --------------------------------------
   SOURCE_ORG: 'LSG-markup-lang' # Organització d’origen
-  SOURCE_REPO: 'edu-teachers' # Nom del repo d’origen
+  SOURCE_REPO: '00-core-teachers' # Nom del repo d’origen
   SOURCE_BRANCH: 'main' # Branca d’origen
 
   # --- Auth (Deploy Key via secret) -----------------------------------------
