@@ -2,6 +2,8 @@
 
 ## 📚 Índex
 
+**HTML/CSS:**
+
 - [Session 01](./sessions/session01)
 - [Session 02](./sessions/session02)
 - [Session 03](./sessions/session03)
@@ -14,6 +16,9 @@
 - [Session 10](./sessions/session10)
 - [Session 11](./sessions/session11)
 - [Session 12](./sessions/session12)
+
+**JS Vanilla:**
+
 - [Session 13](./sessions/session13)
 - [Session 14](./sessions/session14)
 - [Session 15](./sessions/session15)
