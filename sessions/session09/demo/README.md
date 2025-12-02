@@ -7,9 +7,7 @@
   - `@media`
   - `max-width`
   - `min-width`
-
-- **HTML `<link>` Tag Attribute:**
-  - `media="screen and (max-width: ...)"`
+  - [📖 New syntax for range media queries (web.dev)](https://web.dev/articles/media-query-range-syntax?hl=es-419)
 
 ---
 
