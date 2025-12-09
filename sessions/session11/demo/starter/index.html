@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSS Pseudo-elements Demo</title>
+    <link rel="stylesheet" href="css/reset.css" />
+    <link rel="stylesheet" href="css/main.css" />
+  </head>
+  <body>
+    <h1 class="demo-title">CSS Pseudo-elements Demo</h1>
+
+    <p>
+      Select this text to see the <strong>::selection</strong> pseudo-element in
+      action. It changes the background and text color when you highlight it.
+    </p>
+
+    <div class="form-group">
+      <label for="email">Newsletter</label>
+      <input id="email" type="email" placeholder="Write your email here..." />
+      <p class="note">
+        The placeholder text is styled using <code>::placeholder</code>.
+      </p>
+    </div>
+
+    <h2>Features list (using ::marker)</h2>
+    <ul class="feature-list">
+      <li>Custom bullet using <code>::marker</code></li>
+      <li>Easy to style with color and symbols</li>
+      <li>No extra HTML elements required</li>
+    </ul>
+
+    <button class="open-dialog-btn" id="openDialogBtn">
+      Open dialog (with ::backdrop)
+    </button>
+
+    <!-- Diàleg natiu HTML + ::backdrop -->
+    <dialog id="infoDialog">
+      <h2>Modal Dialog</h2>
+      <p>
+        This dialog uses the <code>&lt;dialog&gt;</code> element and the
+        <code>dialog::backdrop</code> pseudo-element for the overlay.
+      </p>
+      <button id="closeDialogBtn">Close</button>
+    </dialog>
+
+    <script>
+      const openBtn = document.getElementById('openDialogBtn');
+      const dialog = document.getElementById('infoDialog');
+      const closeBtn = document.getElementById('closeDialogBtn');
+
+      openBtn.addEventListener('click', () => {
+        dialog.showModal();
+      });
+
+      closeBtn.addEventListener('click', () => {
+        dialog.close();
+      });
+    </script>
+  </body>
+</html>
