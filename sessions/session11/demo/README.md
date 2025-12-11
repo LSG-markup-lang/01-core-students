@@ -3,6 +3,7 @@
 ## 📑 Index
 
 - **CSS Pseudo-elements:**
+
   - `::before`
   - `::after`
   - `::selection`
@@ -10,6 +11,14 @@
   - `::placeholder`
   - `::backdrop`
   - `::first-letter`
+
+- **Deploy / Hosting (GitHub + Vercel)**
+  - Hosting refers to where your project is published and accessible online.
+  - Traditionally, deployment involved manually uploading files to a server.
+  - Using GitHub with platforms like GitHub Pages or Vercel automates this process.
+  - Every push triggers an automatic update of the live site (**Continuous Deployment**).
+  - This process is called **Continuous Integration (CI)**: the platform automatically prepares and updates your project every time you make a change.
+  - Hosting platform: [Vercel](https://vercel.com)
 
 ---
 
