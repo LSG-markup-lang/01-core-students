@@ -49,7 +49,6 @@
 
   - `if / else`
   - `else if`
-  - Ternary operator `condition ? value1 : value2`
   - `switch` statement
 
 - **Loops**

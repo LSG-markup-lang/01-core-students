@@ -7,5 +7,5 @@
 3. [Exercici 3](./exercise03/)
 
 > ℹ️ **Nota**
-> L’Exercici 3 **no és obligatori**.
+> L’Exercici 2 i 3 **no és obligatori**.
 > És **recomanable** fer-lo només per practicar el que s’ha treballat a classe.
