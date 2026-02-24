@@ -22,12 +22,9 @@
 - [Session 13](./sessions/session13)
 - [Session 14](./sessions/session14)
 - [Session 15](./sessions/session15)
-- [Session 16](./sessions/session16)
 
 **PowerBI:**
 
+- [Session 16](./sessions/session16)
 - [Session 17](./sessions/session17)
 - [Session 18](./sessions/session18)
-- [Session 19](./sessions/session19)
-- [Session 20](./sessions/session20)
-- [Session 21](./sessions/session21)
