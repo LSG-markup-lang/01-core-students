@@ -23,7 +23,7 @@
 - [Session 14](./sessions/session14)
 - [Session 15](./sessions/session15)
 
-**PowerBI:**
+**Superweb:**
 
 - [Session 16](./sessions/session16)
 - [Session 17](./sessions/session17)

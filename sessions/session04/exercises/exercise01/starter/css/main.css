@@ -1,0 +1,18 @@
+:root {
+  --primary-color: #dbcf5c;
+}
+
+html {
+  font-size: 1.5rem;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+h3 {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
